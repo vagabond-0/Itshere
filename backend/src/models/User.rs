@@ -3,6 +3,11 @@ use validator::Validate;
 
 
 #[derive(Validate,Deserialize,Serialize)]
+pub struct RequestUser{
+    pub gmail:String
+}
+
+#[derive(Validate,Deserialize,Serialize)]
 pub struct user{
     pub uuid:String,
     pub gmail:String
