@@ -6,6 +6,9 @@ mod models;
 use db::database;
 use uuid;
 mod db;
+use actix_cors::Cors;
+
+
 #[get("/")]
 async fn print_hello() -> impl Responder{
     HttpResponse::Ok().body("helloworld")
@@ -42,24 +45,25 @@ async fn userregister(body: Json<RequestUser>, db: Data<database>) -> impl Respo
     }
 }
 
-
 #[actix_web::main]
-async fn main() -> std::io::Result<()>{
-    
-
+async fn main() -> std::io::Result<()> {
     let db = database::init()
-            .await
-            .expect("error connecting");
+        .await
+        .expect("error connecting");
     let db_data = Data::new(db);
 
-    HttpServer::new(
-        move ||{
-            App::new()
-                .app_data(db_data.clone())
-                .service(print_hello)
-                .service(userregister)
-        }
-    )
+    HttpServer::new(move || {
+        let cors = Cors::default()
+            .allow_any_origin()
+            .allow_any_method() 
+            .allow_any_header(); 
+
+        App::new()
+            .app_data(db_data.clone())
+            .wrap(cors) 
+            .service(print_hello)
+            .service(userregister)
+    })
     .bind(("127.0.0.1", 8080))?
     .run()
     .await
