@@ -19,14 +19,25 @@ async fn userregister(body: Json<RequestUser>, db: Data<database>) -> impl Respo
     }
 
     let mail = body.gmail.clone();
-    let mut buffer = uuid::Uuid::encode_buffer();
-    let new_uuid = uuid::Uuid::new_v4().simple().encode_lower(&mut buffer);
+    match db.FindUserByEmail(mail.clone()).await {
+        Ok(Some(existing_user)) => {
+            HttpResponse::Ok().json(existing_user)
+        }
+        Ok(None) => {
+            let mut buffer = uuid::Uuid::encode_buffer();
+            let new_uuid = uuid::Uuid::new_v4().simple().encode_lower(&mut buffer);
 
-    match db.create_user(new_uuid.to_string(), mail.clone()).await {
-        Ok(new_user) => HttpResponse::Ok().json(new_user),
+            match db.create_user(new_uuid.to_string(), mail.clone()).await {
+                Ok(new_user) => HttpResponse::Ok().json(new_user),
+                Err(e) => {
+                    eprintln!("Database insertion error: {:?}", e);
+                    HttpResponse::InternalServerError().body("Error creating user")
+                }
+            }
+        }
         Err(e) => {
-            eprintln!("Database insertion error: {:?}", e);
-            HttpResponse::InternalServerError().body("Error creating user")
+            eprintln!("Database query error: {:?}", e);
+            HttpResponse::InternalServerError().body("Error checking existing user")
         }
     }
 }

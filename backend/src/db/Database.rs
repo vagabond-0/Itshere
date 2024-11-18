@@ -14,8 +14,7 @@ impl database {
         dotenv().ok();
         let database_url = env::var("DATABASE_URL")
             .expect("DATABASE_URL must be set in .env file");
-
-    
+        
         let pool = PgPoolOptions::new()
             .max_connections(5)
             .connect(&database_url)
@@ -23,11 +22,11 @@ impl database {
 
         Ok(database { pool })
     }
-    pub async fn create_user(&self,uuid:String,gmail:String) -> Result<user,Error>{
+
+    pub async fn create_user(&self, uuid: String, gmail: String) -> Result<user, Error> {
         let result = sqlx::query_as!(
             user,
-            "INSERT INTO users (uuid, gmail) VALUES ($1, $2) 
-            RETURNING  uuid, gmail",
+            "INSERT INTO users (uuid, gmail) VALUES ($1, $2) RETURNING uuid, gmail",
             uuid,
             gmail
         )
@@ -37,4 +36,15 @@ impl database {
         Ok(result)
     }
 
+    pub async fn FindUserByEmail(&self, gmail: String) -> Result<Option<user>, Error> { // Fixed return type to Option<user>
+        let result = sqlx::query_as!(
+            user,
+            "SELECT uuid, gmail FROM users WHERE gmail = $1",
+            gmail
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(result)
+    }
 }

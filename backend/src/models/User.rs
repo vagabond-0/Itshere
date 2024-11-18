@@ -8,6 +8,7 @@ pub struct RequestUser{
 }
 
 #[derive(Validate,Deserialize,Serialize)]
+
 pub struct user{
     pub uuid:String,
     pub gmail:String
