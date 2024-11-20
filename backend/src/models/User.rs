@@ -1,6 +1,6 @@
 use std::string;
 
-use chrono::{DateTime, Utc}; 
+use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc}; 
 use serde::{Deserialize,Serialize};
 use validator::Validate;
 
@@ -8,6 +8,15 @@ use validator::Validate;
 #[derive(Validate,Deserialize,Serialize)]
 pub struct RequestUser{
     pub gmail:String
+}
+
+#[derive(Validate,Deserialize,Serialize)]
+pub struct Postpostmodel{
+    pub user_id:String,
+    pub description: String,
+    pub image_link: String,
+    pub post_type: String,
+    pub time: NaiveDateTime, 
 }
 
 #[derive(Validate,Deserialize,Serialize)]
