@@ -36,6 +36,7 @@ impl user{
 #[derive(Validate, Deserialize, Serialize)]
 pub struct Post {
     pub uuid: String,
+    pub user_id:String,
     pub description: String,
     pub image_link: String,
     pub post_type: String,
@@ -43,9 +44,10 @@ pub struct Post {
 }
 
 impl Post {
-    pub fn new(uuid: String, description: String, image_link: String, post_type: String, time: DateTime<Utc>) -> Post {
+    pub fn new(uuid: String,user_id:String, description: String, image_link: String, post_type: String, time: DateTime<Utc>) -> Post {
         Post {
             uuid,
+            user_id,
             description,
             image_link,
             post_type,
