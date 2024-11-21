@@ -1,6 +1,6 @@
 use actix_web::{body, get, post, web::{Data, Json}, App, HttpResponse, HttpServer, Responder};
 use chrono::{DateTime, Utc};
-use models::{user, Post, Postpostmodel};
+use models::{user, DeletePostRequest, Post, Postpostmodel};
 use models::RequestUser;
 use validator::Validate;
 mod models;
@@ -73,6 +73,44 @@ async fn create_post(db:Data<database>,body:Json<Postpostmodel>)->impl Responder
         }
     }
 
+}
+
+
+//deletepost
+
+
+#[post("/deletepost")]
+async fn delete_post(db: Data<database>, body: Json<DeletePostRequest>) -> impl Responder {
+    let uuid = body.uuid.clone();
+
+    match db.delete_a_post(uuid).await {
+        Ok(Some(post)) => {
+            HttpResponse::Ok().json(post)
+        }
+        Ok(None) => {
+            HttpResponse::NotFound().body("Post not found")
+        }
+        Err(_) => {
+            HttpResponse::InternalServerError().body("Error deleting post")
+        }
+    }
+}
+
+//update post
+#[post("/update_post")]
+async fn update_post(db:Data<database>,body:Json<Post>) -> impl Responder{
+   
+    match db.update_a_post(body.into_inner()).await{
+        Ok(Some(post)) =>{
+            HttpResponse::Ok().json(post)
+        }
+        Ok(None) =>{
+            HttpResponse::NotFound().body("Post not found")
+        }
+        Err(_) =>{
+            HttpResponse::InternalServerError().body("Error deleting post")
+        }
+    }
 }
 
 #[actix_web::main]

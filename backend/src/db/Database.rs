@@ -1,4 +1,4 @@
-use actix_web::cookie::time;
+use actix_web::{cookie::time, web::post};
 use chrono::{DateTime, Utc};
 use sqlx::{Pool, Postgres, postgres::PgPoolOptions, Error};
 use std::env;
@@ -127,4 +127,43 @@ impl database {
         .await?;
         Ok(post_to_delete)
     }   
+
+
+   pub async fn update_a_post(&self,post_update:Post)->Result<Option<Post>,Error>{
+    let post_uuid = post_update.uuid.clone();
+    let post_to_be_updated = sqlx::query_as!(
+        Post,
+        "select * from post where uuid = $1",
+        post_uuid
+    )
+    .fetch_optional(&self.pool)
+    .await;
+
+    
+
+    let updated_post = sqlx::query_as!(
+        Post,
+        "
+        UPDATE post
+        SET
+            user_id = $1,
+            description = $2,
+            image_link = $3,
+            post_type = $4,
+            time = $5
+        WHERE uuid = $6
+        RETURNING uuid, user_id, description, image_link, post_type, time
+        ",
+        post_update.user_id,
+        post_update.description,
+        post_update.image_link,
+        post_update.post_type,
+        post_update.time,
+        post_uuid
+    )
+    .fetch_one(&self.pool)
+    .await?;
+
+    Ok(Some(updated_post))   
+}
 }

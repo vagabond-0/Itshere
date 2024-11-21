@@ -10,6 +10,13 @@ pub struct RequestUser{
     pub gmail:String
 }
 
+
+#[derive(Deserialize)]
+pub struct DeletePostRequest {
+    pub uuid: String,
+}
+
+
 #[derive(Validate,Deserialize,Serialize)]
 pub struct Postpostmodel{
     pub user_id:String,
