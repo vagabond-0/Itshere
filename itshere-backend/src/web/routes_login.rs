@@ -4,56 +4,59 @@ use axum::{Json, Router};
 use serde_json::{json, Value};
 use axum::routing::post;
 use tower_cookies::{Cookie, Cookies};
-use crate::model::{ModelController,User_Register};
+use crate::model::{ModelController, User_Register};
 use std::sync::Arc;
 use axum::extract::State;
 use crate::web::AUTH_TOKEN;
 
-pub fn routes() -> Router{
-    Router::new().route("/api/login", post(api_login))
+pub fn routes(controller: Arc<ModelController>) -> Router {
+    Router::new()
+        .route("/api/login", post(api_login))
+        .route("/api/register", post(create_user))
+        .with_state(controller) 
 }
 
-async fn api_login(cookies: Cookies, Json(payload): Json<LoginPayload>) -> Result<Json<Value>> {
-    if payload.username != "demo1" || payload.pwd != "welcome" {
+pub async fn api_login(
+    State(controller): State<Arc<ModelController>>,
+    cookies: Cookies,
+    Json(payload): Json<LoginPayload>,
+) -> Result<Json<Value>> {
+    let user = controller
+        .find_user_by_username(&payload.username)
+        .await?
+        .ok_or(Error::LoginFail)?; 
+
+    if user.password != payload.pwd {
         return Err(Error::LoginFail);
     }
 
     let token = create_jwt(&payload.username)?;
     cookies.add(Cookie::new(AUTH_TOKEN, token.clone()));
 
-    let body = Json(json!({
+    Ok(Json(json!({
         "result": {
             "success": true,
             "token": token
         }
-    }));
-
-    Ok(body)
+    })))
 }
-
 
 async fn create_user(
     State(controller): State<Arc<ModelController>>,
-    Json(payload): Json<User_Register>,
     cookies: Cookies,
+    Json(payload): Json<User_Register>,
 ) -> Result<Json<Value>> {
     controller.register_user(payload).await?;
-
     cookies.add(Cookie::new(AUTH_TOKEN, "registered"));
-
-    let body = Json(json!({
+    Ok(Json(json!({
         "result": {
             "success": true,
             "message": "User registered successfully"
         }
-    }));
-
-    Ok(body)
+    })))
 }
-
-
-#[derive(Debug,Deserialize)]
-struct LoginPayload{
-    username:String,
-    pwd:String
+#[derive(Debug, Deserialize)]
+pub struct LoginPayload {
+    username: String,
+    pwd: String,
 }

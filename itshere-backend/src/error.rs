@@ -7,7 +7,15 @@ pub enum Error{
     UserWithMailExists,
     TokenCreation,
     InvalidToken,
+    DatabaseError(String),
 }
+
+impl From<mongodb::error::Error> for Error {
+    fn from(err: mongodb::error::Error) -> Self {
+        Error::DatabaseError(err.to_string())
+    }
+}
+
 
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
@@ -23,7 +31,10 @@ impl IntoResponse for Error {
             ),
             Error::TokenCreation => (StatusCode::INTERNAL_SERVER_ERROR, "Failed to create token"),
             Error::InvalidToken => (StatusCode::UNAUTHORIZED, "Invalid or expired token"),
-
+            Error::DatabaseError(msg) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Database error"),
+            
         }
         .into_response()
     }

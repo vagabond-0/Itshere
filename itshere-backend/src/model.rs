@@ -1,16 +1,17 @@
 use crate::{Error,Result};
 use serde::{Serialize,Deserialize};
-use std::sync::{Arc,Mutex};
-
+use mongodb::bson::oid::ObjectId;
+use mongodb::{Collection,bson::doc};
 #[derive(Clone, Debug, Serialize)]
 pub struct User {
     pub id: u64,
     pub username: String,
 }
 
-#[derive(Clone,Debug,Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct User_Register{
-    pub id:u64,
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    pub id: Option<ObjectId>,
     pub username:String,
     pub gmail:String,
     pub PhoneNumber:String,
@@ -48,55 +49,39 @@ pub struct MissingPostCreate {
 
 #[derive(Clone)]
 pub struct ModelController {
-    pub post_items: Arc<Mutex<Vec<MissingPost>>>,
-    pub users: Arc<Mutex<Vec<User_Register>>>,
+    pub user_collection: Collection<User_Register>,
+    pub post_collection: Collection<MissingPost>,
 }
 
 
 impl ModelController {
-    pub async fn new() -> Result<Self> {
-        Ok(Self {
-            post_items: Arc::new(Mutex::new(Vec::new())),
-            users: Arc::new(Mutex::new(Vec::new())),
-        })
+    pub fn new(db: mongodb::Database) -> Self {
+        Self {
+            user_collection: db.collection("users"),
+            post_collection: db.collection("posts"),
+        }
     }
 
     pub async fn register_user(&self, user_data: User_Register) -> Result<()> {
-        let mut users = self.users.lock().unwrap();
-
-        if users.iter().any(|u| u.gmail == user_data.gmail) {
+        let filter = doc! { "gmail": &user_data.gmail };
+        if self.user_collection.find_one(filter, None).await?.is_some() {
             return Err(Error::UserWithMailExists);
         }
 
-        let user = User_Register {
-            id: user_data.id,
-            username: user_data.username,
-            gmail:user_data.gmail,
-            PhoneNumber:user_data.PhoneNumber,
-            password:user_data.password,
-            profile_picture:user_data.profile_picture
-        };
-
-        users.push(user);
+        self.user_collection.insert_one(user_data, None).await?;
         Ok(())
     }
 
     pub async fn add_post(&self, post: MissingPost) -> Result<()> {
-        let mut posts = self.post_items.lock().unwrap();
-        posts.push(post);
+        self.post_collection.insert_one(post, None).await?;
         Ok(())
     }
+    pub async fn find_user_by_username(&self, username: &str) -> Result<Option<User_Register>> {
+        let user = self.user_collection
+            .find_one(doc! { "username": username }, None)
+            .await?;
 
-    pub async fn get_posts(&self) -> Result<Vec<MissingPost>> {
-        let posts = self.post_items.lock().unwrap();
-        Ok(posts.clone())
+        Ok(user)
     }
 
-    pub async fn add_comment(&self, post_id: u64, comment: Comment) -> Result<()> {
-        let mut posts = self.post_items.lock().unwrap();
-        if let Some(post) = posts.iter_mut().find(|p| p.id == post_id) {
-            post.comments.push(comment);
-        }
-        Ok(())
-    }
 }

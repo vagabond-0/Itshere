@@ -15,3 +15,4 @@ hyper = "1.6.0"
 tower-cookies = "0.9"
 jsonwebtoken = "9.3.1"
 chrono = "0.4.40"
+mongodb = { version = "2.8.0", features = ["tokio-runtime"] }

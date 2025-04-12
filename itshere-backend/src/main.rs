@@ -1,27 +1,28 @@
-use axum::{middleware, response::Response, Router};
-use tower_cookies::CookieManagerLayer;
+pub use self::error::{Error, Result};
+use axum::{Router, middleware, response::Response};
+use db::connect_to_db;
+use model::ModelController;
+use tracing_subscriber::layer;
 use std::net::SocketAddr;
-pub use self::error::{
-    Result,
-    Error,
-};
-mod error;
-mod web;
-mod model;
+use std::sync::Arc;
+use tower_cookies::CookieManagerLayer;
 mod auth;
+mod db;
+mod error;
+mod model;
+mod web;
 #[tokio::main]
 async fn main() {
-    let routers = Router::new()
-        .merge(web::routes_login::routes())
-        .layer(CookieManagerLayer::new());
-    let addr = SocketAddr::from(([127, 0, 0, 1], 8080));
-    println!("Listening on {}", addr);
+    let db = connect_to_db().await.unwrap();
+    let controller = Arc::new(ModelController::new(db));
 
-    axum::Server::bind(&addr)
-        .serve(routers.into_make_service())
+    let app = Router::new()
+            .merge(web::routes_login::routes(controller.clone()))
+            .layer(CookieManagerLayer::new());
+
+
+    axum::Server::bind(&"127.0.0.1:3000".parse().unwrap())
+        .serve(app.into_make_service())
         .await
         .unwrap();
-
-    println!("Server started");
 }
-
