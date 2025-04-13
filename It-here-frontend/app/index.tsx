@@ -1,18 +1,25 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useAuth } from '@/context/user-auth';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const {login,isAuthenticated} = useAuth();
   const router = useRouter();
 
+
+  useEffect(()=>{
+    if(isAuthenticated){
+      router.push("/(tabs)/Home");
+    }
+  },[])
   const handleLogin = () => {
-  
     console.log('Username:', username, 'Password:', password);
-    router.replace('/Home'); 
+    login(username,password);
   };
 
   return (
@@ -21,7 +28,7 @@ export default function LoginPage() {
 
       <TextInput
         style={styles.input}
-        placeholder="Email or Username"
+        placeholder="Username"
         placeholderTextColor="#aaa"
         value={username}
         onChangeText={setUsername}
