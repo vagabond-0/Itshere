@@ -60,7 +60,7 @@ export default function LoginPage() {
         <Text style={styles.loginButtonText}>Log In</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => router.push('/')}>
+      <TouchableOpacity onPress={() => router.push('/register')}>
         <Text style={styles.registerText}>
           Don't have an account? <Text style={styles.registerLink}>Register</Text>
         </Text>

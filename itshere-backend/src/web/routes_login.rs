@@ -35,6 +35,7 @@ pub async fn api_login(
 
     Ok(Json(json!({
         "result": {
+            "user":user,
             "success": true,
             "token": token
         }
