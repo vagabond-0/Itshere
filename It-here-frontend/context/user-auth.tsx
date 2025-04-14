@@ -7,6 +7,7 @@ type AuthContextType = {
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
 };
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -33,6 +34,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (data.result?.success) {
         const token = data.result.token;
+        const user = data.result.user;
+        await AsyncStorage.setItem('user',JSON.stringify(user));
         await AsyncStorage.setItem('token', token);
         setIsAuthenticated(true);
         router.replace('/(tabs)/Home');

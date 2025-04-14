@@ -30,6 +30,7 @@ async fn main() {
 
     let app = Router::new()
         .merge(web::routes_login::routes(controller.clone()))
+        .merge(web::routes_post::routes(controller.clone()))
         .layer(cors)
         .layer(CookieManagerLayer::new());
 
