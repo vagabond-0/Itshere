@@ -35,9 +35,14 @@ pub async fn createpost(
     Ok(Json(json!({ "status": "Post created successfully" })))
 }
 
-pub async fn get_posts(State(controller): State<Arc<ModelController>>) -> Result<Json<Vec<PostWithUser>>, StatusCode> {
+pub async fn get_posts(
+    State(controller): State<Arc<ModelController>>
+) -> Result<Json<Vec<PostWithUser>>, StatusCode> {
     match controller.getallpost().await {
         Ok(posts) => Ok(Json(posts)),
-        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+        Err(e) => {
+            eprintln!("Error in getallpost: {:?}", e); 
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
     }
 }

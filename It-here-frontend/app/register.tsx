@@ -52,7 +52,7 @@ export default function RegisterPage() {
     };
 
     try {
-      const response = await fetch('http://192.168.31.81:8000/api/register', {
+      const response = await fetch('http://192.168.79.208:8000/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

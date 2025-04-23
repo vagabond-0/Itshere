@@ -34,6 +34,16 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: '#ffd33d',
+        tabBarInactiveTintColor: '#fff',
+        tabBarStyle:{
+          backgroundColor: '#213448',
+        },
+        headerStyle:{
+          backgroundColor: '#213448',
+        },
+        headerTitleStyle: {
+          color: '#ffd33d',
+        },
         headerRight: () => (
           <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 10 }}>
             {userInfo?.profile_picture && (
@@ -76,6 +86,15 @@ export default function TabLayout() {
           title: 'Its Here',
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? 'home-sharp' : 'home-outline'} color={color} size={24} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="post"
+        options={{
+          title: 'Missing',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'add-circle' : 'add-circle-outline'} color={color} size={24} />
           ),
         }}
       />

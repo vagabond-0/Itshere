@@ -31,10 +31,11 @@ async fn main() {
     let app = Router::new()
         .merge(web::routes_login::routes(controller.clone()))
         .merge(web::routes_post::routes(controller.clone()))
+        .merge(web::route_edit::routes(controller).clone())
         .layer(cors)
         .layer(CookieManagerLayer::new());
 
-    let addr = SocketAddr::from(([192, 168, 31, 81], 8000));
+    let addr = SocketAddr::from(([192,168,79,208], 8000));
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .await
