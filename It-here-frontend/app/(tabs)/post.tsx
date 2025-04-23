@@ -1,16 +1,17 @@
 import { useState, useEffect } from "react";
-import { 
-  ScrollView, 
-  StyleSheet, 
-  View, 
-  TextInput, 
-  Text, 
-  TouchableOpacity, 
-  Alert, 
-  Image, 
-  ActivityIndicator 
+import {
+  ScrollView,
+  StyleSheet,
+  View,
+  TextInput,
+  Text,
+  TouchableOpacity,
+  Alert,
+  Image,
+  ActivityIndicator
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as ImagePicker from 'expo-image-picker';
 
 export default function Post() {
   const [post, setPost] = useState({
@@ -21,10 +22,48 @@ export default function Post() {
     user: "",
     comments: []
   });
-  
+  const [image, setImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [token, setToken] = useState("");
+  const [token, setToken] = useState<string | null>(null);
+
+  const pickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images', 'videos'],
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    console.log(result);
+
+    if (!result.canceled) {
+      setImage(result.assets[0].uri);
+    }
+  };
+  const uploadImageToCloudinary = async (imageUri: string) => {
+    const data = new FormData();
+    data.append("file", {
+      uri: imageUri,
+      name: "upload.jpg",
+      type: "image/jpeg"
+    } as any);
+    data.append("upload_preset", "w9ychwal");    data.append("cloud_name", "dztokafis");
   
+    try {
+      const res = await fetch("https://api.cloudinary.com/v1_1/dztokafis/image/upload", {
+        method: "POST",
+        body: data
+      });
+      const result = await res.json();
+      console.log(result.secure_url)
+      return result.secure_url;
+    } catch (err) {
+      console.error("Upload failed:", err);
+      return null;
+    }
+  };
+  
+
   useEffect(() => {
     const getToken = async () => {
       try {
@@ -36,14 +75,18 @@ export default function Post() {
         console.error("Error retrieving token:", error);
       }
     };
-    
+
     getToken();
   }, []);
-  
-  const handleChange = (field:any, value:any) => {
+
+
+
+
+
+  const handleChange = (field: any, value: any) => {
     setPost({ ...post, [field]: value });
   };
-  
+
   const handleSubmit = () => {
     Alert.alert(
       "Confirm Post",
@@ -60,27 +103,40 @@ export default function Post() {
       ]
     );
   };
-  
+
   const createPost = async () => {
     if (!post.description) {
       Alert.alert("Error", "Post description is required");
       return;
     }
-    
+  
     setIsLoading(true);
-    
+  
     try {
+      let imageUrl = "";
+      if (image) {
+        const uploadedUrl = await uploadImageToCloudinary(image);
+        if (!uploadedUrl) {
+          Alert.alert("Error", "Image upload failed");
+          setIsLoading(false);
+          return;
+        }
+        imageUrl = uploadedUrl;
+      }
+  
+      const fullPost = { ...post, image_link: imageUrl };
+  
       const response = await fetch("http://192.168.79.208:8000/api/createpost", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Cookie": `auth_token=${token}`
         },
-        body: JSON.stringify(post)
+        body: JSON.stringify(fullPost)
       });
-      
+  
       const data = await response.json();
-      
+  
       if (response.ok) {
         Alert.alert("Success", "Post created successfully!");
         setPost({
@@ -91,6 +147,7 @@ export default function Post() {
           user: "",
           comments: []
         });
+        setImage(null);
       } else {
         Alert.alert("Error", data.message || "Failed to create post");
       }
@@ -102,11 +159,12 @@ export default function Post() {
     }
   };
   
+
   return (
     <View style={styles.mainContainer}>
       <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
         <Text style={styles.title}>Missing Something Post Here</Text>
-        
+
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Description</Text>
           <TextInput
@@ -118,7 +176,7 @@ export default function Post() {
             onChangeText={(text) => handleChange("description", text)}
           />
         </View>
-        
+
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Location</Text>
           <TextInput
@@ -128,31 +186,19 @@ export default function Post() {
             onChangeText={(text) => handleChange("place", text)}
           />
         </View>
-        
+
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Image URL</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Add an image link"
-            value={post.image_link}
-            onChangeText={(text) => handleChange("image_link", text)}
-          />
+          {image ? <Text style={styles.label}>Upload Image</Text> : <Text style={styles.label}>Uploaded</Text>}
+          <TouchableOpacity style={styles.uploadButton} onPress={pickImage}>
+            <Text style={styles.uploadButtonText}>Choose Image</Text>
+          </TouchableOpacity>
         </View>
-        
-        {post.image_link ? (
-          <View style={styles.imagePreviewContainer}>
-            <Text style={styles.previewLabel}>Image Preview:</Text>
-            <Image
-              source={{ uri: post.image_link }}
-              style={styles.imagePreview}
-              resizeMode="cover"
-            />
-          </View>
-        ) : null}
+
+        {image && <Image source={{ uri: image }} style={styles.image} />}
       </ScrollView>
-      
-      <TouchableOpacity 
-        style={styles.postButton} 
+
+      <TouchableOpacity
+        style={styles.postButton}
         onPress={handleSubmit}
         disabled={isLoading}
       >
@@ -230,6 +276,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: "#e0e0e0"
   },
+  image: {
+    width: 200,
+    height: 200,
+  },
   postButton: {
     position: "absolute",
     bottom: 20,
@@ -250,5 +300,16 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold",
     fontSize: 16
+  },
+  uploadButton: {
+    backgroundColor: "#ffd33d",
+    padding: 12,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  uploadButtonText: {
+    color: "#000",
+    fontWeight: "bold",
   }
+
 });

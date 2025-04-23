@@ -49,7 +49,7 @@ export default function Index() {
     };
 
     fetchPosts();
-  }, [router]);
+  }, [router,posts]);
 
   if (loading) {
     return (
@@ -96,6 +96,8 @@ const styles = StyleSheet.create({
   container: {
     padding: 16,
     paddingBottom: 40,
+    backgroundColor: "#213448",
+    flexGrow:1
   },
   commentButton:{
     width:'50%',

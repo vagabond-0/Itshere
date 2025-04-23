@@ -14,8 +14,9 @@ type UserInfo = {
 
 export default function TabLayout() {
   const { logout } = useAuth();
-  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);;
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const router = useRouter();
+
   useEffect(() => {
     const fetchUser = async () => {
       const user = await AsyncStorage.getItem('user');
@@ -33,35 +34,41 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
+        headerShown: true,
+        tabBarShowLabel: false,
         tabBarActiveTintColor: '#ffd33d',
         tabBarInactiveTintColor: '#fff',
-        tabBarStyle:{
+        headerTitleAlign: 'center',
+        headerTitle: 'ItsHere', 
+        tabBarStyle: {
           backgroundColor: '#213448',
         },
-        headerStyle:{
+        headerStyle: {
           backgroundColor: '#213448',
         },
         headerTitleStyle: {
           color: '#ffd33d',
         },
+        headerStatusBarHeight: 10,
         headerRight: () => (
           <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 10 }}>
             {userInfo?.profile_picture && (
               <TouchableOpacity
-              onPress={()=>{
-                router.push("/profile");
-              }} >
-              <Image
-                source={{ uri: userInfo.profile_picture }}
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 16,
-                  marginRight: 10,
-                  borderWidth: 1,
-                  borderColor: '#ffd33d',
+                onPress={() => {
+                  router.push("/profile");
                 }}
-              />
+              >
+                <Image
+                  source={{ uri: userInfo.profile_picture }}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 16,
+                    marginRight: 10,
+                    borderWidth: 1,
+                    borderColor: '#ffd33d',
+                  }}
+                />
               </TouchableOpacity>
             )}
             <TouchableOpacity
@@ -83,30 +90,27 @@ export default function TabLayout() {
       <Tabs.Screen
         name="Home"
         options={{
-          title: 'Its Here',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'home-sharp' : 'home-outline'} color={color} size={24} />
+            <Ionicons name={focused ? 'home-sharp' : 'home-outline'} color={color} size={32} />
           ),
         }}
       />
       <Tabs.Screen
         name="post"
         options={{
-          title: 'Missing',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'add-circle' : 'add-circle-outline'} color={color} size={24} />
+            <Ionicons name={focused ? 'add-circle' : 'add-circle-outline'} color={color} size={32} />
           ),
         }}
       />
       <Tabs.Screen
         name="about"
         options={{
-          title: 'About',
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'information-circle' : 'information-circle-outline'}
               color={color}
-              size={24}
+              size={32}
             />
           ),
         }}
