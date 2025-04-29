@@ -1,5 +1,5 @@
 use crate::{
-    auth::verify_jwt,
+    auth::{Claims, verify_jwt},
     model::{Comment, MissingPost, ModelController, PostWithUser},
     web::AUTH_TOKEN,
 };
@@ -16,7 +16,11 @@ use tower_cookies::Cookies;
 pub fn routes(controller: Arc<ModelController>) -> Router {
     Router::new()
         .route("/api/editusername/:gmail", axum::routing::put(editgmail))
-        .route("/api/editphone/:phone",axum::routing::put(edit_phonenumber))
+        .route(
+            "/api/editphone/:phone",
+            axum::routing::put(edit_phonenumber),
+        )
+        .route("/api/userposts/:username", axum::routing::get(getuserpost))
         .with_state(controller)
 }
 
@@ -69,5 +73,37 @@ pub async fn edit_phonenumber(
         .changephonenumber(&user, &phone)
         .await
         .map_err(|_| StatusCode::BAD_REQUEST)?;
-    Ok(Json(json!({ "status": "phone number  updated successfully" })))
+    Ok(Json(
+        json!({ "status": "phone number  updated successfully" }),
+    ))
+}
+
+pub async fn getuserpost(
+    State(controller): State<Arc<ModelController>>,
+    Path(username): Path<String>,
+    cookies: Cookies,
+) -> Result<Json<Value>, StatusCode> {
+    let token = cookies
+        .get(AUTH_TOKEN)
+        .ok_or(StatusCode::UNAUTHORIZED)?
+        .value()
+        .to_string();
+    let Claims = verify_jwt(&token).map_err(|_| StatusCode::UNAUTHORIZED)?;
+    let user = controller
+        .user_collection
+        .find_one(doc! { "username": &username }, None)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .ok_or(StatusCode::NOT_FOUND)?;
+    let posts = controller
+        .get_posts_by_user(&username)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    // Return the posts as JSON
+    Ok(Json(json!({
+    "status": "success",
+    "count": posts.len(),
+    "posts": posts
+    })))
 }

@@ -198,4 +198,47 @@ impl ModelController {
 
         Ok(())
     }
+    pub async fn get_posts_by_user(&self, username: &str) -> Result<Vec<PostWithUser>> {
+        // Create a filter to only find posts by the specified username
+        let filter = doc! { "user": username };
+        
+        let mut cursor = self
+            .post_collection
+            .find(filter, FindOptions::default())
+            .await?;
+
+        let mut posts = Vec::new();
+
+        while let Some(post) = cursor.try_next().await? {
+            // Get the user information for this post
+            let user = self
+                .user_collection
+                .find_one(doc! { "username": &post.user }, None)
+                .await?
+                .ok_or(Error::DatabaseError("User does not exist".to_string()))?;
+
+            // Convert to public user (without password)
+            let public_user = UserPublic {
+                id: user.id,
+                username: user.username,
+                gmail: user.gmail,
+                PhoneNumber: user.PhoneNumber,
+                profile_picture: user.profile_picture,
+            };
+
+            // Create a PostWithUser that includes the user data
+            posts.push(PostWithUser {
+                id: post.id,
+                description: post.description,
+                date: post.date,
+                place: post.place,
+                image_link: post.image_link,
+                user: public_user,
+                comments: post.comments,
+            });
+        }
+
+        Ok(posts)
+    }
+    
 }

@@ -24,12 +24,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const login = async (username: string, password: string) => {
     try {
-      const response = await fetch('http://192.168.79.208:8000/api/login', {
+      const response = await fetch('http://192.168.1.61:8000/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, pwd: password }),
       });
-
+      
       const data = await response.json();
 
       if (data.result?.success) {
