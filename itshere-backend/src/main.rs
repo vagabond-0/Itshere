@@ -35,7 +35,7 @@ async fn main() {
         .layer(cors)
         .layer(CookieManagerLayer::new());
 
-    let addr = SocketAddr::from(([192,168,1,61], 8000));
+    let addr = SocketAddr::from(([127,0,0,1], 8000));
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .await

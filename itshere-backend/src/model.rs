@@ -1,6 +1,7 @@
 use crate::{Error, Result};
 use futures::stream::TryStreamExt;
 use mongodb::bson::oid::ObjectId;
+use mongodb::bson::{to_bson, uuid};
 use mongodb::options::FindOptions;
 use mongodb::{Collection, bson::doc};
 use serde::{Deserialize, Serialize};
@@ -9,6 +10,25 @@ use serde::{Deserialize, Serialize};
 pub struct User {
     pub id: u64,
     pub username: String,
+}
+
+#[derive(Serialize,Deserialize,Debug,Clone)]
+pub struct ChatRoom{
+    pub id:Option<ObjectId>,
+    pub user1:String,
+    pub user2:String,
+    pub created_at:String
+}
+
+#[derive(Serialize,Deserialize,Debug,Clone)]
+pub struct ChatMessage{
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    pub id:Option<ObjectId>,
+    pub char_id : String,
+    pub sender:String,
+    pub send_at:String,
+    pub message:String,
+    pub is_read:bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -24,7 +44,7 @@ pub struct User_Register {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Comment {
-    pub id: u64,
+    pub id: uuid::Uuid,
     pub user_id: String,
     pub message: String,
 }
@@ -199,7 +219,7 @@ impl ModelController {
         Ok(())
     }
     pub async fn get_posts_by_user(&self, username: &str) -> Result<Vec<PostWithUser>> {
-        // Create a filter to only find posts by the specified username
+       
         let filter = doc! { "user": username };
         
         let mut cursor = self
@@ -210,14 +230,12 @@ impl ModelController {
         let mut posts = Vec::new();
 
         while let Some(post) = cursor.try_next().await? {
-            // Get the user information for this post
             let user = self
                 .user_collection
                 .find_one(doc! { "username": &post.user }, None)
                 .await?
                 .ok_or(Error::DatabaseError("User does not exist".to_string()))?;
 
-            // Convert to public user (without password)
             let public_user = UserPublic {
                 id: user.id,
                 username: user.username,
@@ -226,7 +244,6 @@ impl ModelController {
                 profile_picture: user.profile_picture,
             };
 
-            // Create a PostWithUser that includes the user data
             posts.push(PostWithUser {
                 id: post.id,
                 description: post.description,
@@ -239,6 +256,39 @@ impl ModelController {
         }
 
         Ok(posts)
+    }
+
+    pub async fn add_comment_to_post(&self, post_id: &str, comment: Comment) -> Result<()> {
+        let obj_id = ObjectId::parse_str(post_id).map_err(|_| Error::UserNotFound)?;
+    
+        let filter = doc! { "_id": obj_id };
+        let update = doc! {
+            "$push": { "comments": to_bson(&comment).map_err(|_| Error::UserNotFound )? }
+        };
+    
+        let result = self
+            .post_collection
+            .update_one(filter, update, None)
+            .await?;
+    
+        if result.matched_count == 0 {
+            return Err(Error::PostNotFound);
+        }
+    
+        Ok(())
+    }
+    
+    pub async fn getallcomments(&self,post_id:String) -> Result<Vec<Comment>>{
+        let object_id = match mongodb::bson::oid::ObjectId::parse_str(&post_id) {
+            Ok(oid) => oid,
+            Err(_) => return Err(Error::PostNotFound),
+        };
+        let post = self
+        .post_collection
+        .find_one(doc! { "_id": object_id }, None)
+        .await?
+        .ok_or(Error::PostNotFound)?;
+        Ok(post.comments)
     }
     
 }

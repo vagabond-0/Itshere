@@ -100,7 +100,6 @@ pub async fn getuserpost(
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    // Return the posts as JSON
     Ok(Json(json!({
     "status": "success",
     "count": posts.len(),

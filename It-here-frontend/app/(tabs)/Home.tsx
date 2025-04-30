@@ -11,11 +11,16 @@ import {
   Animated,
   RefreshControl,
   Dimensions,
-  Platform
+  Platform,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Alert
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 const CARD_MARGIN = 16;
@@ -32,7 +37,7 @@ type UserPublic = {
 };
 
 type Comment = {
-  id: number;
+  id: any;
   user_id: string;
   message: string;
 };
@@ -53,6 +58,11 @@ export default function Index() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [commentModalVisible, setCommentModalVisible] = useState(false);
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [newComment, setNewComment] = useState('');
+  const [loadingComments, setLoadingComments] = useState(false);
   const router = useRouter();
   
   // Animation values
@@ -95,6 +105,84 @@ export default function Index() {
   useEffect(() => {
     fetchPosts();
   }, []);
+
+  const fetchCommentsForPost = async (postId: string) => {
+    setLoadingComments(true);
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        Alert.alert('Error', 'You need to be logged in to view comments');
+        return;
+      }
+
+      const response = await fetch(`http://192.168.1.61:8000/api/posts/${postId}/getcomments`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': `auth-token=${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch comments');
+      }
+
+      const data = await response.json();
+      setComments(data.comments || []);
+    } catch (error) {
+      console.error('Error fetching comments:', error);
+      Alert.alert('Error', 'Failed to load comments');
+    } finally {
+      setLoadingComments(false);
+    }
+  };
+
+  const postComment = async () => {
+    if (!selectedPostId || !newComment.trim()) {
+      return;
+    }
+
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        Alert.alert('Error', 'You need to be logged in to post comments');
+        return;
+      }
+
+      const response = await fetch(`http://192.168.1.61:8000/api/posts/${selectedPostId}/comments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': `auth-token=${token}`,
+        },
+        body: JSON.stringify({
+          message: newComment,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to post comment');
+      }
+
+      // Clear the comment input field
+      setNewComment('');
+      
+      // Refresh comments after posting
+      await fetchCommentsForPost(selectedPostId);
+      
+      // Refresh the posts list to show updated comment count
+      fetchPosts();
+    } catch (error) {
+      console.error('Error posting comment:', error);
+      Alert.alert('Error', 'Failed to post comment');
+    }
+  };
+
+  const handleCommentButtonPress = (postId: string) => {
+    setSelectedPostId(postId);
+    fetchCommentsForPost(postId);
+    setCommentModalVisible(true);
+  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -216,7 +304,7 @@ export default function Index() {
                   <View style={styles.connection}>
                     <TouchableOpacity 
                       style={styles.commentButton} 
-                      onPress={() => console.log('Comment pressed')}
+                      onPress={() => handleCommentButtonPress(post.id.$oid)}
                     >
                       <Ionicons name="chatbubble-outline" size={18} color="#fff" />
                       <Text style={styles.buttonText}>Comment</Text>
@@ -243,13 +331,82 @@ export default function Index() {
         )}
       </ScrollView>
       
+      {/* Comment Modal */}
+      <Modal
+        visible={commentModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setCommentModalVisible(false)}
+      >
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Comments</Text>
+                <TouchableOpacity onPress={() => setCommentModalVisible(false)}>
+                  <Ionicons name="close" size={24} color="#333" />
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.commentsList}>
+                {loadingComments ? (
+                  <ActivityIndicator size="large" color="#5e72e4" />
+                ) : comments.length > 0 ? (
+                  <ScrollView>
+                    {comments.map((comment, index) => (
+                      <View key={index} style={styles.commentItem}>
+                        <View style={styles.commentAvatar}>
+                          <Text style={styles.commentAvatarText}>
+                            {comment.user_id.charAt(0).toUpperCase()}
+                          </Text>
+                        </View>
+                        <View style={styles.commentContent}>
+                          <Text style={styles.commentUser}>{comment.user_id}</Text>
+                          <Text style={styles.commentMessage}>{comment.message}</Text>
+                        </View>
+                      </View>
+                    ))}
+                  </ScrollView>
+                ) : (
+                  <View style={styles.emptyCommentsContainer}>
+                    <Ionicons name="chatbubble-outline" size={48} color="#ddd" />
+                    <Text style={styles.emptyCommentsText}>No comments yet</Text>
+                    <Text style={styles.emptyCommentsSubtext}>Be the first to comment!</Text>
+                  </View>
+                )}
+              </View>
+              
+              <View style={styles.commentInputContainer}>
+                <TextInput
+                  style={styles.commentInput}
+                  placeholder="Write a comment..."
+                  placeholderTextColor="#999"
+                  value={newComment}
+                  onChangeText={setNewComment}
+                  multiline
+                />
+
+              </View>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+      
       {/* Floating action button */}
       <TouchableOpacity 
         style={styles.floatingButton}
         onPress={() => router.push('/post')}
         activeOpacity={0.8}
       >
-        
+        <LinearGradient
+          colors={['#5e72e4', '#324cdd']}
+          style={styles.gradientButton}
+        >
+          <Ionicons name="add" size={28} color="#fff" />
+        </LinearGradient>
       </TouchableOpacity>
     </View>
   );
@@ -458,4 +615,115 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContainer: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    height: '70%',
+    paddingBottom: Platform.OS === 'ios' ? 20 : 0,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+  },
+  commentsList: {
+    flex: 1,
+    padding: 16,
+  },
+  commentItem: {
+    flexDirection: 'row',
+    marginBottom: 16,
+  },
+  commentAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#5e72e4',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  commentAvatarText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  commentContent: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+    marginLeft: 12,
+    padding: 12,
+    borderRadius: 12,
+  },
+  commentUser: {
+    fontWeight: '600',
+    fontSize: 14,
+    color: '#333',
+    marginBottom: 4,
+  },
+  commentMessage: {
+    fontSize: 14,
+    color: '#555',
+    lineHeight: 20,
+  },
+  commentInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    backgroundColor: '#fff',
+  },
+  commentInput: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    fontSize: 14,
+    maxHeight: 100,
+  },
+  commentSubmitButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#5e72e4',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 12,
+  },
+  commentSubmitButtonDisabled: {
+    backgroundColor: '#e0e0e0',
+  },
+  emptyCommentsContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyCommentsText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#888',
+    marginTop: 16,
+  },
+  emptyCommentsSubtext: {
+    fontSize: 14,
+    color: '#aaa',
+    marginTop: 8,
+  }
 });

@@ -8,7 +8,8 @@ pub enum Error{
     TokenCreation,
     InvalidToken,
     DatabaseError(String),
-    UserNotFound
+    UserNotFound,
+    PostNotFound
 }
 
 impl From<mongodb::error::Error> for Error {
@@ -38,7 +39,11 @@ impl IntoResponse for Error {
             Error::UserNotFound => (
                 StatusCode::CONFLICT,
                 "User is not found"
-            )
+            ),
+            Error::PostNotFound => (
+                StatusCode::CONFLICT,
+                "Post is not found"
+            ),
         }
         .into_response()
     }
