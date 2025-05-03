@@ -119,7 +119,7 @@ export default function Index() {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Cookie': `auth-token=${token}`,
+          'Cookie': `auth_token=${token}`,
         },
       });
 
@@ -153,7 +153,7 @@ export default function Index() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Cookie': `auth-token=${token}`,
+          'Cookie': `auth_token=${token}`,
         },
         body: JSON.stringify({
           message: newComment,
@@ -388,7 +388,20 @@ export default function Index() {
                   onChangeText={setNewComment}
                   multiline
                 />
-
+                <TouchableOpacity 
+    style={[
+      styles.commentSubmitButton,
+      !newComment.trim() && styles.commentSubmitButtonDisabled
+    ]}
+    onPress={postComment}
+    disabled={!newComment.trim()}
+  >
+    <Ionicons 
+      name="send" 
+      size={20} 
+      color={newComment.trim() ? "#fff" : "#aaa"} 
+    />
+  </TouchableOpacity>
               </View>
             </View>
           </View>

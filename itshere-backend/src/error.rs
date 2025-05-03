@@ -7,6 +7,9 @@ pub enum Error{
     UserWithMailExists,
     TokenCreation,
     InvalidToken,
+    ChatNotFound,
+    InvalidId,
+    Unauthorized,
     DatabaseError(String),
     UserNotFound,
     PostNotFound
@@ -43,6 +46,18 @@ impl IntoResponse for Error {
             Error::PostNotFound => (
                 StatusCode::CONFLICT,
                 "Post is not found"
+            ),
+            Error::ChatNotFound => (
+                StatusCode::CONFLICT,
+                "Chat is not found"
+            ),
+            Error::InvalidId => (
+                StatusCode::BAD_REQUEST,
+                "Invalid ID format"
+            ),
+            Error::Unauthorized => (
+                StatusCode::UNAUTHORIZED,
+                "Unauthorized access",
             ),
         }
         .into_response()
