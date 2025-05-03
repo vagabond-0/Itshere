@@ -69,6 +69,42 @@ export default function Index() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
 
+ // First fix the handleConnect function to work with your actual data structure:
+const handleConnect = async (post: Post) => {
+  try {
+    const token = await AsyncStorage.getItem('token');
+    if (!token) {
+      Alert.alert('Error', 'You must be logged in to connect');
+      router.push('/'); // Navigate to login if not logged in
+      return;
+    }
+    
+    // Call your API to create a chat with the post's author
+    const response = await fetch(`http://192.168.1.61:8000/api/chat/create/${post.user.username}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cookie': `auth-token=${token}`
+      },
+      credentials: 'include'
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to create chat');
+    }
+    
+    // Navigate to the chat screen with the username
+    router.push({
+      pathname: '/chat',
+      params: { username: post.user.username }
+    });
+  } catch (error: any) {
+    console.error('Error connecting with user:', error);
+    Alert.alert('Error', 'Could not connect with this user. Please try again later.');
+  }
+};
+
+
   const fetchPosts = async () => {
     try {
       const res = await fetch('http://192.168.1.61:8000/api/getallposts');
@@ -312,7 +348,7 @@ export default function Index() {
                     
                     <TouchableOpacity 
                       style={styles.connectButton} 
-                      onPress={() => console.log('Connect pressed')}
+                      onPress={()=>handleConnect(post)} 
                     >
                       <Ionicons name="link-outline" size={18} color="#fff" />
                       <Text style={styles.buttonText}>Connect</Text>
