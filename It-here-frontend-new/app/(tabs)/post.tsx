@@ -12,7 +12,8 @@ import {
   Animated,
   Dimensions,
   KeyboardAvoidingView,
-  Platform
+  Platform,
+  SafeAreaView
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from 'expo-image-picker';
@@ -38,6 +39,7 @@ export default function Post() {
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
+  const fabAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.parallel([
@@ -49,6 +51,11 @@ export default function Post() {
       Animated.timing(slideAnim, {
         toValue: 0,
         duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fabAnim, {
+        toValue: 1,
+        duration: 1000,
         useNativeDriver: true,
       })
     ]).start();
@@ -208,129 +215,155 @@ export default function Post() {
   };
   
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      style={styles.container}
-    >
-      <LinearGradient
-        colors={['#213448', '#1a2a3d', '#152238']}
-        style={styles.gradientBackground}
-      />
-      
-      <ScrollView 
-        style={styles.scrollView} 
-        contentContainerStyle={styles.contentContainer}
-        showsVerticalScrollIndicator={false}
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.container}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
       >
-        <Animated.View 
-          style={[
-            styles.headerContainer, 
-            { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }
-          ]}
+        <LinearGradient
+          colors={['#213448', '#1a2a3d', '#152238']}
+          style={styles.gradientBackground}
+        />
+        
+        <ScrollView 
+          style={styles.scrollView} 
+          contentContainerStyle={styles.contentContainer}
+          showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.title}>Missing Something?</Text>
-          <Text style={styles.subtitle}>Share it with your community</Text>
-        </Animated.View>
+          <Animated.View 
+            style={[
+              styles.headerContainer, 
+              { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }
+            ]}
+          >
+            <Text style={styles.title}>Missing Something?</Text>
+            <Text style={styles.subtitle}>Share it with your community</Text>
+          </Animated.View>
 
-        <Animated.View 
-          style={[
-            styles.formCard, 
-            { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }
-          ]}
-        >
-          <View style={styles.inputGroup}>
-            <View style={styles.labelContainer}>
-              <Ionicons name="document-text-outline" size={18} color="#5e72e4" />
-              <Text style={styles.label}>Description</Text>
+          <Animated.View 
+            style={[
+              styles.formCard, 
+              { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }
+            ]}
+          >
+            <View style={styles.inputGroup}>
+              <View style={styles.labelContainer}>
+                <Ionicons name="document-text-outline" size={18} color="#5e72e4" />
+                <Text style={styles.label}>Description</Text>
+              </View>
+              <TextInput
+                style={styles.textArea}
+                placeholder="What are you looking for?"
+                placeholderTextColor="#a0a0a0"
+                multiline
+                numberOfLines={4}
+                value={post.description}
+                onChangeText={(text) => handleChange("description", text)}
+              />
             </View>
-            <TextInput
-              style={styles.textArea}
-              placeholder="What are you looking for?"
-              placeholderTextColor="#a0a0a0"
-              multiline
-              numberOfLines={4}
-              value={post.description}
-              onChangeText={(text) => handleChange("description", text)}
-            />
-          </View>
 
-          <View style={styles.inputGroup}>
-            <View style={styles.labelContainer}>
-              <Ionicons name="location-outline" size={18} color="#5e72e4" />
-              <Text style={styles.label}>Location</Text>
+            <View style={styles.inputGroup}>
+              <View style={styles.labelContainer}>
+                <Ionicons name="location-outline" size={18} color="#5e72e4" />
+                <Text style={styles.label}>Location</Text>
+              </View>
+              <TextInput
+                style={styles.input}
+                placeholder="Where did you last see it?"
+                placeholderTextColor="#a0a0a0"
+                value={post.place}
+                onChangeText={(text) => handleChange("place", text)}
+              />
             </View>
-            <TextInput
-              style={styles.input}
-              placeholder="Where did you last see it?"
-              placeholderTextColor="#a0a0a0"
-              value={post.place}
-              onChangeText={(text) => handleChange("place", text)}
-            />
-          </View>
 
-          <View style={styles.inputGroup}>
-            <View style={styles.labelContainer}>
-              <Ionicons name="image-outline" size={18} color="#5e72e4" />
-              <Text style={styles.label}>Add Image</Text>
-            </View>
-            
-            <TouchableOpacity 
-              style={styles.uploadButton} 
-              onPress={pickImage}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="cloud-upload-outline" size={22} color="#213448" />
-              <Text style={styles.uploadButtonText}>
-                {image ? "Change Image" : "Choose Image"}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {image && (
-            <View style={styles.imagePreviewContainer}>
-              <Image source={{ uri: image }} style={styles.imagePreview} />
-              <TouchableOpacity 
-                style={styles.removeImageButton}
-                onPress={() => setImage(null)}
-              >
-                <Ionicons name="close-circle" size={28} color="#ff4757" />
-              </TouchableOpacity>
+            <View style={styles.inputGroup}>
+              <View style={styles.labelContainer}>
+                <Ionicons name="image-outline" size={18} color="#5e72e4" />
+                <Text style={styles.label}>Add Image</Text>
+              </View>
               
-              {uploadProgress > 0 && uploadProgress < 100 && (
-                <View style={styles.progressBarContainer}>
-                  <View style={[styles.progressBar, { width: `${uploadProgress}%` }]} />
-                </View>
-              )}
+              <TouchableOpacity 
+                style={styles.uploadButton} 
+                onPress={pickImage}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="cloud-upload-outline" size={22} color="#ffffff" />
+                <Text style={styles.uploadButtonText}>
+                  {image ? "Change Image" : "Choose Image"}
+                </Text>
+              </TouchableOpacity>
             </View>
-          )}
-        </Animated.View>
-      </ScrollView>
 
-      <View style={styles.bottomBar}>
-        <TouchableOpacity
-          style={[styles.postButton, isLoading && styles.postButtonDisabled]}
-          onPress={handleSubmit}
-          disabled={isLoading}
-          activeOpacity={0.8}
+            {image && (
+              <View style={styles.imagePreviewContainer}>
+                <Image source={{ uri: image }} style={styles.imagePreview} />
+                <TouchableOpacity 
+                  style={styles.removeImageButton}
+                  onPress={() => setImage(null)}
+                >
+                  <Ionicons name="close-circle" size={28} color="#ff4757" />
+                </TouchableOpacity>
+                
+                {uploadProgress > 0 && uploadProgress < 100 && (
+                  <View style={styles.progressBarContainer}>
+                    <View style={[styles.progressBar, { width: `${uploadProgress}%` }]} />
+                  </View>
+                )}
+              </View>
+            )}
+          </Animated.View>
+          
+          {/* Extra space at the bottom to ensure content isn't hidden behind the FAB */}
+          <View style={{ height: 100 }} />
+        </ScrollView>
+
+        {/* Floating Action Button (FAB) */}
+        <Animated.View 
+          style={[
+            styles.fabContainer,
+            {
+              opacity: fabAnim,
+              transform: [
+                { scale: fabAnim },
+                { translateY: fabAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [20, 0]
+                })}
+              ]
+            }
+          ]}
         >
-          {isLoading ? (
-            <ActivityIndicator color="#fff" size="small" />
-          ) : (
-            <>
-              <Text style={styles.postButtonText}>Post Now</Text>
-              <Ionicons name="send" size={18} color="#fff" style={{ marginLeft: 8 }} />
-            </>
-          )}
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+          <TouchableOpacity
+            style={styles.fab}
+            onPress={handleSubmit}
+            disabled={isLoading}
+            activeOpacity={0.8}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#fff" size="large" />
+            ) : (
+              <>
+                <Ionicons name="send" size={26} color="#fff" />
+                <Text style={styles.fabText}>Post</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </Animated.View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#213448",
+  },
   container: {
     flex: 1,
     backgroundColor: "#213448",
+    position: 'relative',
   },
   gradientBackground: {
     position: 'absolute',
@@ -344,7 +377,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: 20,
-    paddingBottom: 100,
+    paddingBottom: 120, // Extra padding to account for the FAB
   },
   headerContainer: {
     marginBottom: 25,
@@ -431,7 +464,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   uploadButtonText: {
-    color: "#213448",
+    color: "#ffffff",
     fontWeight: "700",
     fontSize: 16,
     marginLeft: 8,
@@ -475,36 +508,36 @@ const styles = StyleSheet.create({
     height: 8,
     backgroundColor: '#5e72e4',
   },
-  bottomBar: {
+  fabContainer: {
     position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(26, 42, 61, 0.9)',
-    padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.1)',
-    paddingBottom: Platform.OS === 'ios' ? 30 : 16,
+    right: 20,
+    bottom: 30,
+    zIndex: 1000,
   },
-  postButton: {
-    backgroundColor: "#5e72e4",
-    padding: 16,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
+  fab: {
+    width: 130,
+    height: 54,
+    borderRadius: 30,
+    backgroundColor: '#5e72e4',
+    justifyContent: 'center',
+    alignItems: 'center',
     flexDirection: 'row',
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 10,
+    bottom:50,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  fabText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 18,
+    marginLeft: 8,
   },
   postButtonDisabled: {
     backgroundColor: "#45526e",
-  },
-  postButtonText: {
-    color: "#fff",
-    fontWeight: "700",
-    fontSize: 16,
   },
 });
