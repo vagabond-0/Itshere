@@ -19,6 +19,7 @@ pub fn routes(controller: Arc<ModelController>) -> Router {
         .route("/api/chat/create/:username", axum::routing::post(create_chat))
         .route("/api/chat/:username", axum::routing::post(send_message))
         .route("/api/chat/:username", axum::routing::get(get_chat))
+        .route("/api/getchat", axum::routing::get(getallchatrooms))
         .with_state(controller)
 }
 pub async fn create_chat(
@@ -142,6 +143,34 @@ pub async fn get_chat(
         },
         Err(e) => {
             eprintln!("Error retrieving messages: {:?}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+pub async fn  getallchatrooms(
+    State(controller): State<Arc<ModelController>>,
+    cookies: Cookies,
+) -> Result<Json<Value>, StatusCode> {
+    let token = cookies
+        .get(AUTH_TOKEN)
+        .ok_or(StatusCode::UNAUTHORIZED)?
+        .value()
+        .to_string();
+    let claims = verify_jwt(&token).map_err(|_| StatusCode::UNAUTHORIZED)?;
+    let u_name = claims.sub;
+    
+    println!("Getting all chat rooms for {}", u_name);
+    
+    match controller.get_chat_rooms(&u_name).await {
+        Ok(rooms) => {
+            println!("Chat rooms retrieved successfully");
+            Ok(Json(json!({ 
+                "status": "success", 
+                "chat_rooms": rooms
+            })))
+        },
+        Err(e) => {
+            eprintln!("Error retrieving chat rooms: {:?}", e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }

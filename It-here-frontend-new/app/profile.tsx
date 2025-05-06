@@ -98,7 +98,7 @@ export default function ProfilePage() {
     
     try {
       setPostsLoading(true);
-      const response = await fetch(`http://192.168.1.61:8000/api/userposts/${username}`, {
+      const response = await fetch(`https://itsherebackend-production.up.railway.app/api/userposts/${username}`, {
         headers: {
           'Cookie': `auth_token=${token}`
         }
@@ -157,8 +157,8 @@ export default function ProfilePage() {
       }
       
       const endpoint = modalType === 'email' 
-        ? `http://192.168.1.61:8000/api/editusername/${newValue}`
-        : `http://192.168.1.61:8000/api/editphone/${newValue}`;
+        ? `https://itsherebackend-production.up.railway.app/api/editusername/${newValue}`
+        : `https://itsherebackend-production.up.railway.app/api/editphone/${newValue}`;
       
       const response = await fetch(endpoint, {
         method: 'PUT',

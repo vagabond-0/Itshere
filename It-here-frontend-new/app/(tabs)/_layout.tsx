@@ -210,12 +210,12 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="about"
+        name="chats"
         options={{
           tabBarIcon: ({ color, focused }) => (
             <View style={styles.tabIconContainer}>
               <Ionicons
-                name={focused ? 'information-circle' : 'information-circle-outline'}
+                name={focused ? 'notifications-circle' : 'notifications-circle-outline'}
                 color={color}
                 size={ICON_SIZE}
               />

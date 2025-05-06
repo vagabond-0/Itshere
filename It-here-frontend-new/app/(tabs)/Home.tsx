@@ -80,7 +80,7 @@ const handleConnect = async (post: Post) => {
     }
     
     // Call your API to create a chat with the post's author
-    const response = await fetch(`http://192.168.1.61:8000/api/chat/create/${post.user.username}`, {
+    const response = await fetch(`https://itsherebackend-production.up.railway.app/api/chat/create/${post.user.username}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -107,7 +107,7 @@ const handleConnect = async (post: Post) => {
 
   const fetchPosts = async () => {
     try {
-      const res = await fetch('http://192.168.1.61:8000/api/getallposts');
+      const res = await fetch('https://itsherebackend-production.up.railway.app/api/getallposts');
       const data = await res.json();
       setPosts(data);
       
@@ -151,7 +151,7 @@ const handleConnect = async (post: Post) => {
         return;
       }
 
-      const response = await fetch(`http://192.168.1.61:8000/api/posts/${postId}/getcomments`, {
+      const response = await fetch(`https://itsherebackend-production.up.railway.app/api/posts/${postId}/getcomments`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -185,7 +185,7 @@ const handleConnect = async (post: Post) => {
         return;
       }
 
-      const response = await fetch(`http://192.168.1.61:8000/api/posts/${selectedPostId}/comments`, {
+      const response = await fetch(`https://itsherebackend-production.up.railway.app/api/posts/${selectedPostId}/comments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

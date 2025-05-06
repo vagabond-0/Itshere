@@ -180,7 +180,7 @@ export default function Post() {
   
       const fullPost = { ...post, image_link: imageUrl };
   
-      const response = await fetch("http://192.168.1.61:8000/api/createpost", {
+      const response = await fetch("https://itsherebackend-production.up.railway.app/api/createpost", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

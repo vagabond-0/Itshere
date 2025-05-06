@@ -12,7 +12,8 @@ pub enum Error{
     Unauthorized,
     DatabaseError(String),
     UserNotFound,
-    PostNotFound
+    PostNotFound,
+    Custom,
 }
 
 impl From<mongodb::error::Error> for Error {
@@ -59,6 +60,11 @@ impl IntoResponse for Error {
                 StatusCode::UNAUTHORIZED,
                 "Unauthorized access",
             ),
+            Error::Custom => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "An unexpected error occurred",
+            ),
+            
         }
         .into_response()
     }

@@ -122,10 +122,8 @@ export default function ChatScreen() {
     if (username) {
       fetchMessages();
       
-      // Set up a polling interval that's less frequent (every 10 seconds)
       const intervalId = setInterval(syncWithBackend, 10000);
       
-      // Clean up the interval on unmount
       return () => clearInterval(intervalId);
     }
   }, [username, currentUser]);
@@ -139,24 +137,27 @@ export default function ChatScreen() {
     }
   }, [messages]);
   
-  const transformMessages = (backendMessages: BackendMessage[]): Message[] => {
-    if (!currentUser) {
-      console.warn('Current user is not set, message sender status may be incorrect');
-    }
+ // Fix the transformMessages function to ensure is_sender is always a boolean
+
+const transformMessages = (backendMessages: BackendMessage[]): Message[] => {
+  if (!currentUser) {
+    console.warn('Current user is not set, message sender status may be incorrect');
+  }
+  
+  return backendMessages.map(msg => {
+    // Ensure this is a boolean by using strict comparison and explicitly converting to boolean
+    const isSender = Boolean(currentUser && msg.sender === currentUser);
+    console.log(`Message from ${msg.sender}, currentUser=${currentUser}, isSender=${isSender}`);
     
-    return backendMessages.map(msg => {
-      const isSender = currentUser && msg.sender === currentUser;
-      console.log(`Message from ${msg.sender}, currentUser=${currentUser}, isSender=${isSender}`);
-      
-      return {
-        id: msg._id.$oid,
-        content: msg.message,
-        timestamp: msg.send_at,
-        is_sender: isSender,
-        sender: msg.sender
-      };
-    });
-  };
+    return {
+      id: msg._id.$oid,
+      content: msg.message,
+      timestamp: msg.send_at,
+      is_sender: isSender, // Now guaranteed to be a boolean
+      sender: msg.sender
+    };
+  });
+};
   
   // Complete fetch of all messages from backend
   const fetchMessages = async () => {
@@ -170,7 +171,7 @@ export default function ChatScreen() {
       
       console.log(`Fetching messages for chat with ${username}`);
       
-      const response = await fetch(`http://192.168.1.61:8000/api/chat/${username}`, {
+      const response = await fetch(`https://itsherebackend-production.up.railway.app/api/chat/${username}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -215,7 +216,7 @@ export default function ChatScreen() {
       const lastSync = lastSyncTimeRef.current.toISOString();
       
       const response = await fetch(
-        `http://192.168.1.61:8000/api/chat/${username}?since=${lastSync}`, 
+        `https://itsherebackend-production.up.railway.app/api/chat/${username}?since=${lastSync}`, 
         {
           method: 'GET',
           headers: {
@@ -292,7 +293,7 @@ export default function ChatScreen() {
       }, 100);
       
       // Then send to backend
-      const response = await fetch(`http://192.168.1.61:8000/api/chat/${username}`, {
+      const response = await fetch(`https://itsherebackend-production.up.railway.app/api/chat/${username}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -330,9 +331,9 @@ export default function ChatScreen() {
       setError(err.message);
       
       // Remove the optimistic message on error
-      setMessages(prevMessages => 
-        prevMessages.filter(msg => msg.id !== tempId)
-      );
+      // setMessages(prevMessages => 
+      //   prevMessages.filter(msg => msg.id !== tempId)
+      // );
       
       Alert.alert('Error', 'Failed to send message. Please try again.');
     }

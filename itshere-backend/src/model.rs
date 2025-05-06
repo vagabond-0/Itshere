@@ -1,4 +1,4 @@
-use crate::{Error, Result};
+use crate::{error::Error, error::Result};
 use futures::stream::TryStreamExt;
 use mongodb::bson::oid::ObjectId;
 use mongodb::bson::{to_bson, uuid};
@@ -404,6 +404,23 @@ impl ModelController {
         println!("Found {} messages", messages.len());
         
         Ok(messages)
+    }
+    pub async fn get_chat_rooms(&self, username: &str) -> Result<Vec<ChatRoom>> {
+        let filter = doc! {
+            "$or": [
+                { "user1": username },
+                { "user2": username }
+            ]
+        };
+
+        let mut cursor = self.chat_room_collection.find(filter, None).await?;
+        let mut chat_rooms = Vec::new();
+
+        while let Some(chat_room) = cursor.try_next().await? {
+            chat_rooms.push(chat_room);
+        }
+
+        Ok(chat_rooms)
     }
 
 }

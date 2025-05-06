@@ -1,6 +1,6 @@
 use serde::{Deserialize,Serialize};
 use jsonwebtoken::{encode, decode, Header, Validation, EncodingKey, DecodingKey};
-use crate::Error;
+use crate::error::Error;
 use chrono::{Utc, Duration};
 
 #[derive(Debug, Serialize, Deserialize)]

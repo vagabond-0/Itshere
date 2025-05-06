@@ -14,19 +14,22 @@ mod model;
 mod web;
 #[tokio::main]
 async fn main() {
+    tracing_subscriber::fmt::init(); // Optional logging
+
     let db = connect_to_db().await.unwrap();
     let controller = Arc::new(ModelController::new(db));
+
     let cors = CorsLayer::new()
-    .allow_origin(Any)
-    .allow_methods([
-        axum::http::Method::GET,
-        axum::http::Method::POST,
-        axum::http::Method::PUT,
-        axum::http::Method::DELETE,
-        axum::http::Method::OPTIONS,
-    ])
-    .allow_headers(Any)
-    .allow_credentials(false); 
+        .allow_origin(Any)
+        .allow_methods([
+            axum::http::Method::GET,
+            axum::http::Method::POST,
+            axum::http::Method::PUT,
+            axum::http::Method::DELETE,
+            axum::http::Method::OPTIONS,
+        ])
+        .allow_headers(Any)
+        .allow_credentials(false);
 
     let app = Router::new()
         .merge(web::routes_login::routes(controller.clone()))
@@ -36,7 +39,10 @@ async fn main() {
         .layer(cors)
         .layer(CookieManagerLayer::new());
 
-    let addr = SocketAddr::from(([192,168,1,61], 8000));
+    // ✅ Hardcoded address for deployment
+    let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
+    println!("Server running at http://{}", addr);
+
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .await
